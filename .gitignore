@@ -1,0 +1,17 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+
+# tunnel binary (large, not needed for deploy)
+cloudflared.exe
+
+# logs / temp
+*.log
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
