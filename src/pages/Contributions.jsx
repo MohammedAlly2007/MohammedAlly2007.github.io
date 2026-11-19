@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useStore, setState, genId, money, auditLog } from '../store'
+import { useStore, setState, genId, money, auditLog, cloudDelete } from '../store'
 import { Plus, X, Trash2, Edit2, Target, CalendarDays } from 'lucide-react'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
@@ -36,6 +36,7 @@ export default function Contributions({ canEdit }) {
     const count = s.payments.filter(p => p.campaignId === c.id).length
     if (!(await confirmAction(count ? `Futa mchango "${c.name}"? Malipo ${count} yatabaki kama mchango wa mfuko mkuu.` : `Futa mchango "${c.name}"?`))) return
     setState(prev => ({ ...prev, campaigns: prev.campaigns.filter(x => x.id !== c.id) }))
+    cloudDelete('board_campaigns', c.id)
     auditLog('Futa mchango', c.name)
     showToast('Mchango umefutwa', 'success')
   }

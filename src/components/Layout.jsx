@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Target, Wallet, Receipt, FileBarChart, PieChart, Bell, Settings as SettingsIcon, History, LogOut, Menu, Moon, Sun, Search, X } from 'lucide-react'
-import { logout, roleLabel } from '../store'
+import { LayoutDashboard, Users, Target, Wallet, Receipt, FileBarChart, PieChart, Bell, Settings as SettingsIcon, History, LogOut, Menu, Moon, Sun, Search, X, MessageSquare } from 'lucide-react'
+import { logout, roleLabel, useStore, unreadChatCount } from '../store'
 import { useState, useEffect } from 'react'
 
 const baseNav = [
@@ -11,12 +11,15 @@ const baseNav = [
   { to: '/expenses', label: 'Matumizi', icon: Receipt },
   { to: '/budgets', label: 'Bajeti', icon: PieChart },
   { to: '/reports', label: 'Ripoti', icon: FileBarChart },
+  { to: '/chat', label: 'Live Chat', icon: MessageSquare },
   { to: '/notifications', label: 'Arifa', icon: Bell },
 ]
 
 export default function Layout({ session, children }) {
   const loc = useLocation()
   const navigate = useNavigate()
+  const state = useStore()
+  const unread = unreadChatCount(state)
   const [open, setOpen] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
 
@@ -62,6 +65,11 @@ export default function Layout({ session, children }) {
               <Link key={to} to={to} onClick={() => setOpen(false)} aria-current={active ? 'page' : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${active ? 'bg-primary-600 text-white shadow-lg shadow-primary-900/40' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`}>
                 <Icon size={18} /> {label}
+                {to === '/chat' && unread > 0 && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow">
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
               </Link>
             )
           })}

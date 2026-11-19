@@ -6,7 +6,7 @@ export default function AuditLog() {
   const s = useStore()
   const [q, setQ] = useState('')
 
-  const rows = (s.audit || []).filter(a => !q || `${a.action} ${a.detail} ${a.user}`.toLowerCase().includes(q.toLowerCase()))
+  const rows = (s.audit || []).filter(a => a.action !== 'chat' && (!q || `${a.action} ${a.detail} ${a.user}`.toLowerCase().includes(q.toLowerCase())))
 
   const exportCSV = () => {
     const data = [['Tarehe/Saa', 'Mtumiaji', 'Nafasi', 'Hatua', 'Maelezo']]

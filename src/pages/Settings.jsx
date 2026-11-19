@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useStore, setState, genId, hashPassword, auditLog, roleLabel as roleName } from '../store'
+import { useStore, setState, genId, hashPassword, auditLog, roleLabel as roleName, cloudDelete } from '../store'
 import { Plus, Trash2, X, Download, Upload, KeyRound, ShieldCheck, Database, Users } from 'lucide-react'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
@@ -34,6 +34,7 @@ export default function Settings() {
     const u = s.users.find(x => x.id === id)
     if (!(await confirmAction(`Futa mtumiaji ${u?.name || ''}?`))) return
     setState(prev => ({ ...prev, users: prev.users.filter(u => u.id !== id) }))
+    cloudDelete('board_users', id)
     auditLog('Futa mtumiaji', u?.name || id)
     showToast('Mtumiaji amefutwa', 'success')
   }

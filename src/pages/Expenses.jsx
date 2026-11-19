@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useStore, setState, genId, money, auditLog, isApproved } from '../store'
+import { useStore, setState, genId, money, auditLog, isApproved, cloudDelete } from '../store'
 import { Plus, X, Trash2, Upload, Check, Ban, Clock, Search } from 'lucide-react'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
@@ -68,6 +68,7 @@ export default function Expenses({ canEdit }) {
   const remove = async (id) => {
     if (!(await confirmAction('Futa matumizi haya?'))) return
     setState(prev => ({ ...prev, expenses: prev.expenses.filter(e => e.id !== id) }))
+    cloudDelete('board_expenses', id)
     auditLog('Futa matumizi', id)
     showToast('Matumizi yamefutwa', 'success')
   }

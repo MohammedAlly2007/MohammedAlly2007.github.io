@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { ensureSeed, useStore, logout } from './store'
+import { ensureSeed, useStore, logout, refreshFromCloud, notifyChange } from './store'
 import Login from './pages/Login'
 import Layout from './components/Layout'
 import ToastContainer from './components/Toast'
@@ -17,13 +17,31 @@ import Settings from './pages/Settings'
 import AuditLog from './pages/AuditLog'
 import Budgets from './pages/Budgets'
 import MemberStatement from './pages/MemberStatement'
+import LiveChat from './pages/LiveChat'
 
 export default function App() {
   const [ready, setReady] = useState(false)
   const state = useStore()
   const session = state.session
 
-  useEffect(() => { ensureSeed().then(() => setReady(true)) }, [])
+  useEffect(() => { ensureSeed().then(() => { notifyChange(); setReady(true) }) }, [])
+
+  // Shared cloud database: keep everyone's data in sync without a reload.
+  useEffect(() => {
+    if (!session) return
+    let alive = true
+    const tick = () => { if (alive) refreshFromCloud().catch(() => {}) }
+    const onVisible = () => { if (document.visibilityState === 'visible') tick() }
+    const id = setInterval(tick, 25000)
+    window.addEventListener('focus', tick)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      alive = false
+      clearInterval(id)
+      window.removeEventListener('focus', tick)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [session])
 
   // Auto-logout after 30 minutes of inactivity
   useEffect(() => {
@@ -60,6 +78,7 @@ export default function App() {
               <Route path="/expenses" element={<Expenses canEdit={canEdit} />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/notifications" element={<Notifications />} />
+              <Route path="/chat" element={<LiveChat />} />
               <Route path="/settings" element={session?.role === 'cfo' ? <Settings /> : <Navigate to="/" />} />
               <Route path="/audit" element={session?.role === 'cfo' ? <AuditLog /> : <Navigate to="/" />} />
               <Route path="/budgets" element={<Budgets canEdit={canEdit} />} />

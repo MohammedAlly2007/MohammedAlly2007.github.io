@@ -16,6 +16,7 @@ const defaultState = () => ({
   expenses: [],
   budgets: [],
   audit: [],
+  chat: [],
   session: null,
 })
 
@@ -32,9 +33,15 @@ export async function ensureSeed() {
   if (cloudConfigured()) {
     try {
       const cloud = await cloudPull()
-      if (cloud && (cloud.members.length || cloud.payments.length || cloud.users.length)) {
-        const existing = loadState()
-        localStorage.setItem(KEY, JSON.stringify({ ...cloud, session: existing?.session || null }))
+      const ok = cloud._ok || {}
+      const hasCloudData = ['members', 'campaigns', 'payments', 'expenses', 'budgets', 'audit', 'users', 'chat']
+        .some((k) => (cloud[k] || []).length)
+      delete cloud._ok
+      if (hasCloudData) {
+        const existing = loadState() || {}
+        const next = { ...existing, ...cloud, session: existing.session || null }
+        if (!cloud.users.length) next.users = existing.users || []
+        localStorage.setItem(KEY, JSON.stringify(next))
         return
       }
       // Cloud empty: push local data up (first-time migration).
@@ -70,7 +77,7 @@ export async function ensureSeed() {
     }
     if (!state.session) state.session = null
     // Backfill collections introduced by newer versions so old saves keep working.
-    ;['users', 'members', 'campaigns', 'payments', 'expenses', 'budgets', 'audit'].forEach((key) => {
+    ;['users', 'members', 'campaigns', 'payments', 'expenses', 'budgets', 'audit', 'chat'].forEach((key) => {
       if (!Array.isArray(state[key])) state[key] = []
     })
     // Remove any leftover demo data from previous versions (by known demo ids).
@@ -101,12 +108,15 @@ export function loadState() {
 
 export function saveState(state) {
   localStorage.setItem(KEY, JSON.stringify(state))
+  lastWriteAt = Date.now()
   window.dispatchEvent(new CustomEvent(EVT))
   // Optional cloud sync (Supabase free tier) — only if configured.
   cloudSync(state).catch(() => {})
 }
 
 export function getState() { return loadState() || defaultState() }
+
+export function notifyChange() { window.dispatchEvent(new CustomEvent(EVT)) }
 
 export function setState(updater) {
   const s = getState()
@@ -225,6 +235,11 @@ export function initials(name = '') {
 const SB_DEFAULT_URL = 'https://tbtjukggjjqjgwrwkqrb.supabase.co'
 const SB_DEFAULT_KEY = 'sb_publishable_5iWpaaSkJIpczjZXCfJm9Q_DmE3_gPP'
 
+// Timestamp of the last local write. Used to avoid a background refresh
+// overwriting a change that has not finished uploading yet.
+let lastWriteAt = 0
+const CHAT_ACTION = 'chat'
+
 function cloudConfigured() {
   try {
     const url = (localStorage.getItem('sb_url') || SB_DEFAULT_URL).trim()
@@ -270,23 +285,56 @@ function fromDb(table, row) {
 
 async function cloudFetch(path, options = {}) {
   const url = cloudBase() + path
-  const res = await fetch(url, { ...options, headers: { ...cloudHeaders(), ...(options.headers || {}) } })
-  if (!res.ok) throw new Error('HTTP ' + res.status)
-  const text = await res.text()
-  return text ? JSON.parse(text) : null
+  const ctrl = new AbortController()
+  const timer = setTimeout(() => ctrl.abort(), 12000)
+  try {
+    const res = await fetch(url, { ...options, headers: { ...cloudHeaders(), ...(options.headers || {}) }, signal: ctrl.signal })
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    const text = await res.text()
+    return text ? JSON.parse(text) : null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 async function cloudPull() {
   const tables = ['board_members', 'board_campaigns', 'board_payments', 'board_expenses', 'board_budgets', 'board_audit', 'board_users']
   const keys = ['members', 'campaigns', 'payments', 'expenses', 'budgets', 'audit', 'users']
-  const result = { members: [], campaigns: [], payments: [], expenses: [], budgets: [], audit: [], users: [], session: null }
+  const result = { members: [], campaigns: [], payments: [], expenses: [], budgets: [], audit: [], users: [], chat: [], session: null }
+  const ok = {}
   for (let i = 0; i < tables.length; i++) {
     try {
       const rows = await cloudFetch('/rest/v1/' + tables[i] + '?select=*')
-      result[keys[i]] = (rows || []).map((r) => fromDb(tables[i], r))
-    } catch { /* table may not exist yet */ }
+      ok[tables[i]] = true
+      if (tables[i] === 'board_audit') {
+        // Live Chat rides on the audit table (action = 'chat') so it works with
+        // exactly the same database grants as the rest of the app.
+        result.audit = (rows || []).filter(r => r.action !== CHAT_ACTION).map(r => fromDb('board_audit', r))
+        result.chat = (rows || []).filter(r => r.action === CHAT_ACTION).map(r => ({
+          id: r.id,
+          body: r.detail || '',
+          authorName: r.actor || 'Mtumiaji',
+          role: r.role || 'member',
+          at: r.created_at,
+        }))
+      } else {
+        result[keys[i]] = (rows || []).map((r) => fromDb(tables[i], r))
+      }
+    } catch { ok[tables[i]] = false }
   }
+  result._ok = ok
   return result
+}
+
+function chatToDb(msg) {
+  return {
+    id: msg.id,
+    action: CHAT_ACTION,
+    detail: String(msg.body || '').slice(0, 1000),
+    actor: msg.authorName || 'Mtumiaji',
+    role: msg.role || 'member',
+    created_at: msg.at || new Date().toISOString(),
+  }
 }
 
 async function cloudSync(state) {
@@ -307,4 +355,76 @@ async function cloudSync(state) {
       await cloudFetch('/rest/v1/' + table, { method: 'POST', body: JSON.stringify(rows) })
     } catch { /* ignore per-table failures */ }
   }
+  // Live Chat messages live in board_audit with action = 'chat'.
+  const chatRows = (state.chat || []).map(chatToDb)
+  if (chatRows.length) {
+    try {
+      await cloudFetch('/rest/v1/board_audit', { method: 'POST', body: JSON.stringify(chatRows) })
+    } catch { /* ignore */ }
+  }
+}
+
+// Remove rows from the cloud as well, otherwise the next refresh would bring
+// a deleted record back.
+export async function cloudDelete(table, ids) {
+  if (!cloudConfigured()) return
+  const list = (Array.isArray(ids) ? ids : [ids]).filter(Boolean).map(String)
+  if (!list.length) return
+  try {
+    await cloudFetch('/rest/v1/' + table + '?id=in.(' + list.map(encodeURIComponent).join(',') + ')', { method: 'DELETE' })
+  } catch { /* ignore */ }
+}
+
+// Pull fresh data from the shared cloud database so everyone sees what others
+// enter. Safe: it never wipes a collection the server could not be read.
+export async function refreshFromCloud() {
+  if (!cloudConfigured()) return false
+  // A local save may still be uploading; don't overwrite it mid-flight.
+  if (Date.now() - lastWriteAt < 5000) return false
+  const cloud = await cloudPull()
+  const ok = cloud._ok || {}
+  const existing = loadState()
+  if (!existing) return false
+  const next = { ...existing }
+  if (ok.board_members) next.members = cloud.members
+  if (ok.board_campaigns) next.campaigns = cloud.campaigns
+  if (ok.board_payments) next.payments = cloud.payments
+  if (ok.board_expenses) next.expenses = cloud.expenses
+  if (ok.board_budgets) next.budgets = cloud.budgets
+  if (ok.board_audit) { next.audit = cloud.audit; next.chat = cloud.chat }
+  // Never accept an empty user list — that would lock everybody out.
+  if (ok.board_users && cloud.users.length) next.users = cloud.users
+  next.session = existing.session || null
+  delete next._ok
+  localStorage.setItem(KEY, JSON.stringify(next))
+  window.dispatchEvent(new CustomEvent(EVT))
+  return true
+}
+
+// ---------- Live Chat ----------
+export function markChatSeen() {
+  localStorage.setItem('chat_seen_at', String(Date.now()))
+  window.dispatchEvent(new CustomEvent(EVT))
+}
+
+export function unreadChatCount(state) {
+  const seen = Number(localStorage.getItem('chat_seen_at') || 0)
+  const me = state?.session?.userId
+  return (state?.chat || []).filter(c => c.authorId !== me && new Date(c.at).getTime() > seen).length
+}
+
+export function sendChat(body) {
+  const text = String(body || '').trim().slice(0, 1000)
+  const s = getState()
+  if (!text || !s.session) return null
+  const msg = {
+    id: genId('c'),
+    authorId: s.session.userId,
+    authorName: s.session.name,
+    role: s.session.role,
+    body: text,
+    at: new Date().toISOString(),
+  }
+  setState(prev => ({ ...prev, chat: [...(prev.chat || []), msg].slice(-400) }))
+  return msg
 }

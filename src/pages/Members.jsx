@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useStore, setState, genId, money, memberStatus, memberPaid, memberExpected, auditLog } from '../store'
+import { useStore, setState, genId, money, memberStatus, memberPaid, memberExpected, auditLog, cloudDelete } from '../store'
 import { Plus, Edit2, Trash2, X, Eye, Upload, Download, Printer } from 'lucide-react'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
@@ -123,6 +123,8 @@ export default function Members({ canEdit }) {
       members: prev.members.filter(m => m.id !== id),
       payments: prev.payments.filter(p => p.memberId !== id)
     }))
+    cloudDelete('board_members', id)
+    cloudDelete('board_payments', s.payments.filter(p => p.memberId === id).map(p => p.id))
     auditLog('Futa mwanachama', member?.fullName || id)
     showToast('Mwanachama amefutwa', 'success')
   }
