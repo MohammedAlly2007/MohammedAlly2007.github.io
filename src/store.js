@@ -222,21 +222,24 @@ export function initials(name = '') {
 // Only activates when the user has saved a Supabase URL + Anon Key in Settings.
 // Uses the Supabase REST (PostgREST) API directly — no SDK dependency.
 
+const SB_DEFAULT_URL = 'https://tbtjukggjjqjgwrwkqrb.supabase.co'
+const SB_DEFAULT_KEY = 'sb_publishable_5iWpaaSkJIpczjZXCfJm9Q_DmE3_gPP'
+
 function cloudConfigured() {
   try {
-    const url = (localStorage.getItem('sb_url') || '').trim()
-    const key = (localStorage.getItem('sb_key') || '').trim()
+    const url = (localStorage.getItem('sb_url') || SB_DEFAULT_URL).trim()
+    const key = (localStorage.getItem('sb_key') || SB_DEFAULT_KEY).trim()
     return !!(url && key)
   } catch { return false }
 }
 
 function cloudHeaders() {
-  const key = (localStorage.getItem('sb_key') || '').trim()
+  const key = (localStorage.getItem('sb_key') || SB_DEFAULT_KEY).trim()
   return { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }
 }
 
 function cloudBase() {
-  return (localStorage.getItem('sb_url') || '').trim().replace(/\/$/, '')
+  return (localStorage.getItem('sb_url') || SB_DEFAULT_URL).trim().replace(/\/$/, '')
 }
 
 function toDb(table, row) {

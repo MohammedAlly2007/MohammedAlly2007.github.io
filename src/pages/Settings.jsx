@@ -135,8 +135,8 @@ export default function Settings() {
           <code className="bg-gray-100 px-1 rounded text-xs">supabase/migrations/015_board_finance.sql</code>, (4) weka hapa chini:
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <input className="input" placeholder="Supabase URL (https://xxxx.supabase.co)" defaultValue={localStorage.getItem('sb_url') || ''} onChange={e => localStorage.setItem('sb_url', e.target.value)} />
-          <input className="input" placeholder="Supabase Anon Key" defaultValue={localStorage.getItem('sb_key') || ''} onChange={e => localStorage.setItem('sb_key', e.target.value)} />
+          <input className="input" placeholder="Supabase URL (https://xxxx.supabase.co)" defaultValue={localStorage.getItem('sb_url') || 'https://tbtjukggjjqjgwrwkqrb.supabase.co'} onChange={e => localStorage.setItem('sb_url', e.target.value)} />
+          <input className="input" placeholder="Supabase Anon Key" defaultValue={localStorage.getItem('sb_key') || 'sb_publishable_5iWpaaSkJIpczjZXCfJm9Q_DmE3_gPP'} onChange={e => localStorage.setItem('sb_key', e.target.value)} />
         </div>
         <div className="flex gap-2 mt-3 flex-wrap">
           <button onClick={async () => {
