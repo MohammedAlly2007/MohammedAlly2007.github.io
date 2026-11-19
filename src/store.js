@@ -27,6 +27,22 @@ export async function hashPassword(pw) {
 }
 
 export async function ensureSeed() {
+  // If a cloud database (Supabase) is configured, pull from it first so all
+  // devices/users share the same data. Falls back to localStorage on failure.
+  if (cloudConfigured()) {
+    try {
+      const cloud = await cloudPull()
+      if (cloud && (cloud.members.length || cloud.payments.length || cloud.users.length)) {
+        const existing = loadState()
+        localStorage.setItem(KEY, JSON.stringify({ ...cloud, session: existing?.session || null }))
+        return
+      }
+      // Cloud empty: push local data up (first-time migration).
+      const local = loadState()
+      if (local) await cloudSync(local)
+    } catch { /* fall through to localStorage seeding */ }
+  }
+
   const raw = localStorage.getItem(KEY)
   const base = defaultState()
   const hashedUsers = await Promise.all(base.users.map(async (u) => {
@@ -86,6 +102,8 @@ export function loadState() {
 export function saveState(state) {
   localStorage.setItem(KEY, JSON.stringify(state))
   window.dispatchEvent(new CustomEvent(EVT))
+  // Optional cloud sync (Supabase free tier) — only if configured.
+  cloudSync(state).catch(() => {})
 }
 
 export function getState() { return loadState() || defaultState() }
@@ -198,4 +216,92 @@ export function formatDate(value) {
 
 export function initials(name = '') {
   return String(name).trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || '?'
+}
+
+// ---------- Optional cloud sync (Supabase free tier) ----------
+// Only activates when the user has saved a Supabase URL + Anon Key in Settings.
+// Uses the Supabase REST (PostgREST) API directly — no SDK dependency.
+
+function cloudConfigured() {
+  try {
+    const url = (localStorage.getItem('sb_url') || '').trim()
+    const key = (localStorage.getItem('sb_key') || '').trim()
+    return !!(url && key)
+  } catch { return false }
+}
+
+function cloudHeaders() {
+  const key = (localStorage.getItem('sb_key') || '').trim()
+  return { apikey: key, Authorization: 'Bearer ' + key, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }
+}
+
+function cloudBase() {
+  return (localStorage.getItem('sb_url') || '').trim().replace(/\/$/, '')
+}
+
+function toDb(table, row) {
+  switch (table) {
+    case 'board_members': return { id: row.id, full_name: row.fullName, phone: row.phone || '', email: row.email || '', position: row.position || 'Mwanachama', required_amount: Number(row.requiredAmount || 0), notes: row.notes || '', created_at: row.createdAt || new Date().toISOString() }
+    case 'board_campaigns': return { id: row.id, name: row.name, purpose: row.purpose || '', target_amount: Number(row.targetAmount || 0), per_member_amount: Number(row.perMemberAmount || 0), start_date: row.startDate || null, due_date: row.dueDate || null, status: row.status || 'active', created_at: row.createdAt || new Date().toISOString() }
+    case 'board_payments': return { id: row.id, member_id: row.memberId || null, campaign_id: row.campaignId || null, amount: Number(row.amount || 0), paid_on: row.date || new Date().toISOString().slice(0, 10), note: row.note || '', receipt_url: row.receiptUrl || '', recorded_by: row.recordedBy || '', created_at: row.createdAt || new Date().toISOString() }
+    case 'board_expenses': return { id: row.id, title: row.title, category: row.category || 'operations', amount: Number(row.amount || 0), spent_on: row.date || new Date().toISOString().slice(0, 10), approved_by: row.approvedBy || '', approved_at: row.approvedAt || null, status: row.status || 'approved', note: row.note || '', receipt_url: row.receiptUrl || '', recorded_by: row.recordedBy || '', created_at: row.createdAt || new Date().toISOString() }
+    case 'board_budgets': return { id: row.id, category: row.category || 'operations', amount: Number(row.amount || 0), period: row.period || 'monthly', note: row.note || '', created_at: row.createdAt || new Date().toISOString() }
+    case 'board_audit': return { id: row.id, action: row.action, detail: row.detail || '', actor: row.user || '', role: row.role || '', created_at: row.at || new Date().toISOString() }
+    case 'board_users': return { id: row.id, name: row.name, email: row.email, role: row.role || 'member', member_id: row.memberId || null, password_hash: row.passwordHash, created_at: new Date().toISOString() }
+    default: return row
+  }
+}
+
+function fromDb(table, row) {
+  switch (table) {
+    case 'board_members': return { id: row.id, fullName: row.full_name, phone: row.phone || '', email: row.email || '', position: row.position || 'Mwanachama', requiredAmount: Number(row.required_amount || 0), notes: row.notes || '', createdAt: row.created_at }
+    case 'board_campaigns': return { id: row.id, name: row.name, purpose: row.purpose || '', targetAmount: Number(row.target_amount || 0), perMemberAmount: Number(row.per_member_amount || 0), startDate: row.start_date || '', dueDate: row.due_date || '', status: row.status || 'active', createdAt: row.created_at }
+    case 'board_payments': return { id: row.id, memberId: row.member_id, campaignId: row.campaign_id, amount: Number(row.amount || 0), date: row.paid_on, note: row.note || '', receiptUrl: row.receipt_url || '', recordedBy: row.recorded_by || '', createdAt: row.created_at }
+    case 'board_expenses': return { id: row.id, title: row.title, category: row.category || 'operations', amount: Number(row.amount || 0), date: row.spent_on, approvedBy: row.approved_by || '', approvedAt: row.approved_at || null, status: row.status || 'approved', note: row.note || '', receiptUrl: row.receipt_url || '', recordedBy: row.recorded_by || '', createdAt: row.created_at }
+    case 'board_budgets': return { id: row.id, category: row.category || 'operations', amount: Number(row.amount || 0), period: row.period || 'monthly', note: row.note || '', createdAt: row.created_at }
+    case 'board_audit': return { id: row.id, action: row.action, detail: row.detail || '', user: row.actor || '', role: row.role || '', at: row.created_at }
+    case 'board_users': return { id: row.id, name: row.name, email: row.email, role: row.role || 'member', memberId: row.member_id, passwordHash: row.password_hash, createdAt: row.created_at }
+    default: return row
+  }
+}
+
+async function cloudFetch(path, options = {}) {
+  const url = cloudBase() + path
+  const res = await fetch(url, { ...options, headers: { ...cloudHeaders(), ...(options.headers || {}) } })
+  if (!res.ok) throw new Error('HTTP ' + res.status)
+  const text = await res.text()
+  return text ? JSON.parse(text) : null
+}
+
+async function cloudPull() {
+  const tables = ['board_members', 'board_campaigns', 'board_payments', 'board_expenses', 'board_budgets', 'board_audit', 'board_users']
+  const keys = ['members', 'campaigns', 'payments', 'expenses', 'budgets', 'audit', 'users']
+  const result = { members: [], campaigns: [], payments: [], expenses: [], budgets: [], audit: [], users: [], session: null }
+  for (let i = 0; i < tables.length; i++) {
+    try {
+      const rows = await cloudFetch('/rest/v1/' + tables[i] + '?select=*')
+      result[keys[i]] = (rows || []).map((r) => fromDb(tables[i], r))
+    } catch { /* table may not exist yet */ }
+  }
+  return result
+}
+
+async function cloudSync(state) {
+  if (!cloudConfigured()) return
+  const mapping = [
+    ['members', 'board_members'],
+    ['campaigns', 'board_campaigns'],
+    ['payments', 'board_payments'],
+    ['expenses', 'board_expenses'],
+    ['budgets', 'board_budgets'],
+    ['audit', 'board_audit'],
+    ['users', 'board_users'],
+  ]
+  for (const [key, table] of mapping) {
+    const rows = (state[key] || []).map((r) => toDb(table, r))
+    if (!rows.length) continue
+    try {
+      await cloudFetch('/rest/v1/' + table, { method: 'POST', body: JSON.stringify(rows) })
+    } catch { /* ignore per-table failures */ }
+  }
 }
