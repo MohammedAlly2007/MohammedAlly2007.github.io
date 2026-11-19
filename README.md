@@ -39,7 +39,7 @@ Nafasi (roles):
 10. **UX** — dark mode, utafutaji wa haraka (Ctrl+K), animations, PWA (installable), print styles.
 
 ## Hifadhi ya data
-Data zote zinahifadhiwa kwenye kivinjari (localStorage, key `smartsoko_board_finance_v2`).
+Data zote zinahifadhiwa kwenye kivinjari (localStorage, key `smartsoko_board_finance_v3`).
 Tumia **Mipangilio → Backup & Restore** kuhifadhi data kwenye faili. Data haisambazwi kati ya vifaa.
 
 Supabase (free tier) inaweza kuunganishwa baadaye; schema ipo kwenye

@@ -1,24 +1,17 @@
 import React from 'react'
 // Lightweight localStorage-backed store with cross-component sync.
-const KEY = 'smartsoko_board_finance_v2'
+const KEY = 'smartsoko_board_finance_v3'
 const EVT = 'ssbf:change'
 
 const defaultState = () => ({
   users: [
     { id: 'u1', email: 'cfo@smartsoko.co.tz', name: 'CFO (Msimamizi Mkuu)', role: 'cfo', passwordHash: null, memberId: null, _pw: 'smartsoko123' },
     { id: 'u2', email: 'ceo@smartsoko.co.tz', name: 'CEO / Mkurugenzi', role: 'ceo', passwordHash: null, memberId: null, _pw: 'smartsoko123' },
-    { id: 'u3', email: 'juma@smartsoko.co.tz', name: 'Juma Mwanachama', role: 'member', passwordHash: null, memberId: 'm1', _pw: 'smartsoko123' },
     { id: 'u4', email: 'accountantsmartsokosuleyman@khamisi', name: 'Mhasibu (Accountant) — Suleyman', role: 'accountant', passwordHash: null, memberId: null, _pw: '20062006' },
     { id: 'u5', email: 'Itdepartmentpassword@ahmad', name: 'IT Department', role: 'accountant', passwordHash: null, memberId: null, _pw: '88778877' },
   ],
-  members: [
-    { id: 'm1', fullName: 'Juma Abdallah', phone: '0755123456', email: 'juma@smartsoko.co.tz', position: 'Mwanachama', requiredAmount: 500000, notes: '', createdAt: new Date().toISOString() },
-    { id: 'm2', fullName: 'Amina Hassan', phone: '0766234567', email: 'amina@smartsoko.co.tz', position: 'Mwanachama', requiredAmount: 500000, notes: '', createdAt: new Date().toISOString() },
-    { id: 'm3', fullName: 'Peter John', phone: '0777345678', email: 'peter@smartsoko.co.tz', position: 'Katibu', requiredAmount: 500000, notes: '', createdAt: new Date().toISOString() },
-  ],
-  campaigns: [
-    { id: 'c1', name: 'Gharama za Usajili', purpose: 'Usajili wa kampuni', targetAmount: 1500000, perMemberAmount: 500000, startDate: '2026-01-01', dueDate: '2026-03-31', status: 'active', createdAt: new Date().toISOString() },
-  ],
+  members: [],
+  campaigns: [],
   payments: [],
   expenses: [],
   budgets: [],
@@ -47,7 +40,7 @@ export async function ensureSeed() {
     return
   }
 
-  // Merge: add any missing seeded users (by email) without wiping existing data.
+  // Merge: add any missing seeded users (by email) without wiping existing data/passwords.
   try {
     const state = JSON.parse(raw)
     if (!Array.isArray(state.users)) state.users = []
@@ -56,21 +49,25 @@ export async function ensureSeed() {
       if (!existing.has(String(u.email).toLowerCase())) {
         state.users.push(u)
         existing.add(String(u.email).toLowerCase())
-      } else {
-        // keep password in sync for seeded accounts
-        const idx = state.users.findIndex((x) => String(x.email || '').toLowerCase() === String(u.email).toLowerCase())
-        if (idx >= 0) {
-          state.users[idx].passwordHash = u.passwordHash
-          state.users[idx].role = u.role
-          state.users[idx].name = u.name
-        }
       }
+      // Do not overwrite passwordHash/role/name of existing accounts.
     }
     if (!state.session) state.session = null
     // Backfill collections introduced by newer versions so old saves keep working.
     ;['users', 'members', 'campaigns', 'payments', 'expenses', 'budgets', 'audit'].forEach((key) => {
       if (!Array.isArray(state[key])) state[key] = []
     })
+    // Remove any leftover demo data from previous versions (by known demo ids).
+    const demoMemberIds = new Set(['m1', 'm2', 'm3'])
+    const demoCampaignIds = new Set(['c1'])
+    if (Array.isArray(state.members)) state.members = state.members.filter((m) => !demoMemberIds.has(m.id))
+    if (Array.isArray(state.campaigns)) state.campaigns = state.campaigns.filter((c) => !demoCampaignIds.has(c.id))
+    if (Array.isArray(state.payments)) state.payments = state.payments.filter((p) => !demoMemberIds.has(p.memberId) && !demoCampaignIds.has(p.campaignId))
+    if (Array.isArray(state.expenses)) state.expenses = state.expenses.filter((e) => !['e1', 'e2', 'e3'].includes(e.id))
+    if (Array.isArray(state.budgets)) state.budgets = state.budgets.filter((b) => b.id !== 'b1')
+    if (Array.isArray(state.audit)) state.audit = state.audit.filter((a) => a.id !== 'a1')
+    // Remove the demo member user account.
+    if (Array.isArray(state.users)) state.users = state.users.filter((u) => u.id !== 'u3' && String(u.email || '').toLowerCase() !== 'juma@smartsoko.co.tz')
     localStorage.setItem(KEY, JSON.stringify(state))
   } catch {
     base.users = hashedUsers
