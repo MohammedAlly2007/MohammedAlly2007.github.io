@@ -15,7 +15,6 @@ export default function Settings() {
 
   const addUser = async () => {
     if (!form.name.trim() || !form.email.trim()) return showToast('Jina na barua pepe vinahitajika', 'error')
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && !form.email.includes('@')) return showToast('Barua pepe si sahihi', 'error')
     if (form.password.length < 6) return showToast('Nenosiri liwe na herufi 6 au zaidi', 'error')
     const exists = s.users.some(u => String(u.email).toLowerCase() === form.email.trim().toLowerCase())
     if (exists) return showToast('Barua pepe hii imetumika tayari', 'error')
@@ -69,7 +68,6 @@ export default function Settings() {
         const data = JSON.parse(r.result)
         if (!Array.isArray(data.members) || !Array.isArray(data.payments)) throw new Error('Faili si sahihi')
         if (!(await confirmAction('Badilisha data yote ya kifedha na backup hii? Watumiaji watabaki kama walivyo.'))) return
-        // Restore financial data only, keeping the current accounts/session so nobody gets locked out.
         setState(prev => ({
           ...prev,
           members: data.members || [],
@@ -126,15 +124,31 @@ export default function Settings() {
       </div>
 
       <div className="card mb-4">
-        <h3 className="font-semibold mb-3 flex items-center gap-2"><Database size={18} /> Uhifadhi wa Data</h3>
+        <h3 className="font-semibold mb-3 flex items-center gap-2"><Database size={18} /> Uhifadhi wa Data (Cloud — Hiari)</h3>
         <p className="text-sm text-gray-600 mb-3">
-          Data inahifadhiwa kwenye kivinjari hiki (localStorage) na inafanya kazi bila usanidi wowote.
-          Kwa uhifadhi wa wingu wa bure, unaweza kuunganisha Supabase (free tier) — faili la SQL lipo kwenye
-          <code className="bg-gray-100 px-1 rounded text-xs">supabase/migrations/015_board_finance.sql</code>.
+          Kwa chaguo-msingi data inahifadhiwa kwenye kivinjari hiki (localStorage) — bure, inafanya kazi bila mtandao,
+          na haitegemei akaunti yoyote. Data haisambazi kati ya vifaa.
+        </p>
+        <p className="text-sm text-gray-600 mb-3">
+          Kwa hifadhi ya wingu ya bure (cross-device), tumia <strong>Supabase Free Tier</strong> (500MB DB, 50k watumiaji,
+          bure kabisa): (1) tengeneza akaunti bure kwenye supabase.com, (2) tengeneza project, (3) SQL Editor → Run faili
+          <code className="bg-gray-100 px-1 rounded text-xs">supabase/migrations/015_board_finance.sql</code>, (4) weka hapa chini:
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <input className="input" placeholder="Supabase URL (https://xxxx.supabase.co)" defaultValue={localStorage.getItem('sb_url') || ''} onChange={e => localStorage.setItem('sb_url', e.target.value)} />
           <input className="input" placeholder="Supabase Anon Key" defaultValue={localStorage.getItem('sb_key') || ''} onChange={e => localStorage.setItem('sb_key', e.target.value)} />
+        </div>
+        <div className="flex gap-2 mt-3 flex-wrap">
+          <button onClick={async () => {
+            const url = (localStorage.getItem('sb_url') || '').trim().replace(/\/$/, '')
+            const key = (localStorage.getItem('sb_key') || '').trim()
+            if (!url || !key) return showToast('Weka URL na Anon Key kwanza', 'error')
+            try {
+              const r = await fetch(url + '/rest/v1/', { headers: { apikey: key, Authorization: 'Bearer ' + key } })
+              if (r.ok || r.status === 404) showToast('Uunganisho wa Supabase umefanikiwa ✓', 'success')
+              else showToast('Imeshindikana: HTTP ' + r.status, 'error')
+            } catch (e) { showToast('Hitilafu ya mtandao: ' + e.message, 'error') }
+          }} className="btn-secondary text-sm flex items-center gap-1.5">Jaribu Uunganisho</button>
         </div>
         <p className="text-xs text-gray-400 mt-2">* Muhimu: hakikisha unapakua backup mara kwa mara. LocalStorage haisambazi data kati ya vifaa.</p>
       </div>
