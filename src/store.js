@@ -375,8 +375,13 @@ export async function cloudDelete(table, ids) {
   } catch { /* ignore */ }
 }
 
-// Pull fresh data from the shared cloud database so everyone sees what others
-// enter. Safe: it never wipes a collection the server could not be read.
+// Force an immediate two-way sync (used when connectivity returns).
+export async function syncNow() {
+  if (!cloudConfigured()) return false
+  try { await cloudSync(getState()) } catch { /* ignore */ }
+  return refreshFromCloud()
+}
+
 export async function refreshFromCloud() {
   if (!cloudConfigured()) return false
   // A local save may still be uploading; don't overwrite it mid-flight.

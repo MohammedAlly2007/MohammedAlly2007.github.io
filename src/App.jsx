@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { ensureSeed, useStore, logout, refreshFromCloud, notifyChange } from './store'
+import { ensureSeed, useStore, logout, refreshFromCloud, notifyChange, syncNow } from './store'
 import Login from './pages/Login'
 import Layout from './components/Layout'
 import ToastContainer from './components/Toast'
@@ -21,6 +21,7 @@ import LiveChat from './pages/LiveChat'
 
 export default function App() {
   const [ready, setReady] = useState(false)
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
   const state = useStore()
   const session = state.session
 
@@ -43,6 +44,19 @@ export default function App() {
     }
   }, [session])
 
+  // React to connectivity changes: when the network returns, push any data
+  // that was saved while offline and pull the latest from the cloud.
+  useEffect(() => {
+    const onOnline = () => { setOnline(true); if (session) syncNow().catch(() => {}) }
+    const onOffline = () => setOnline(false)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [session])
+
   // Auto-logout after 30 minutes of inactivity
   useEffect(() => {
     if (!session) return
@@ -62,6 +76,11 @@ export default function App() {
 
   return (
     <>
+    {!online && (
+      <div className="fixed top-0 inset-x-0 z-50 bg-amber-500 text-white text-xs font-semibold text-center py-1.5 shadow-md no-print">
+        Hakuna mtandao — data inahifadhiwa kwenye kifaa hiki; itasawazishwa mtandao urudi.
+      </div>
+    )}
     <ToastContainer />
     <ConfirmModal />
     <BrowserRouter>

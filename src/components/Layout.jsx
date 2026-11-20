@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, Target, Wallet, Receipt, FileBarChart, PieChart, Bell, Settings as SettingsIcon, History, LogOut, Menu, Moon, Sun, Search, X, MessageSquare } from 'lucide-react'
+import { LayoutDashboard, Users, Target, Wallet, Receipt, FileBarChart, PieChart, Bell, Settings as SettingsIcon, History, LogOut, Menu, Moon, Sun, Search, X, MessageSquare, Download } from 'lucide-react'
 import { logout, roleLabel, useStore, unreadChatCount } from '../store'
 import { useState, useEffect } from 'react'
 
@@ -20,8 +20,28 @@ export default function Layout({ session, children }) {
   const navigate = useNavigate()
   const state = useStore()
   const unread = unreadChatCount(state)
-  const [open, setOpen] = useState(false)
-  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  const [installPrompt, setInstallPrompt] = useState(null)
+  const [installed, setInstalled] = useState(false)
+
+  useEffect(() => {
+    const onBip = (e) => { e.preventDefault(); setInstallPrompt(e) }
+    const onInstalled = () => { setInstalled(true); setInstallPrompt(null) }
+    window.addEventListener('beforeinstallprompt', onBip)
+    window.addEventListener('appinstalled', onInstalled)
+    // Already installed (standalone mode)?
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) setInstalled(true)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onBip)
+      window.removeEventListener('appinstalled', onInstalled)
+    }
+  }, [])
+
+  const install = async () => {
+    if (!installPrompt) return
+    installPrompt.prompt()
+    try { await installPrompt.userChoice } catch {}
+    setInstallPrompt(null)
+  }
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
@@ -90,6 +110,11 @@ export default function Layout({ session, children }) {
           <button onClick={() => setDark(d => !d)} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-gray-300 hover:bg-white/10 hover:text-white transition">
             {dark ? <Sun size={14} /> : <Moon size={14} />} {dark ? 'Light mode' : 'Dark mode'}
           </button>
+          {installPrompt && !installed && (
+            <button onClick={install} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-white bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 transition shadow-md active:scale-95">
+              <Download size={14} /> Sakinisha App (PWA)
+            </button>
+          )}
           <button onClick={handleLogout} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-red-300 hover:bg-red-500/15 hover:text-red-200 transition">
             <LogOut size={14} /> Toka (Logout)
           </button>
