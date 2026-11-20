@@ -20,6 +20,8 @@ export default function Layout({ session, children }) {
   const navigate = useNavigate()
   const state = useStore()
   const unread = unreadChatCount(state)
+  const [open, setOpen] = useState(false)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
   const [installPrompt, setInstallPrompt] = useState(null)
   const [installed, setInstalled] = useState(false)
 
