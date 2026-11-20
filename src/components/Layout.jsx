@@ -1,3 +1,4 @@
+// Layout — build id: 7ef5a11-install-v2
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, Users, Target, Wallet, Receipt, FileBarChart, PieChart, Bell,

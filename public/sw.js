@@ -4,7 +4,7 @@
 // - Supabase (cross-origin) GETs: network first, fall back to cache so the
 //   last known data is still visible offline.
 // - Old caches are removed on activate.
-const CACHE = 'smartsoko-fedha-v4'
+const CACHE = 'smartsoko-fedha-v5'
 const OFFLINE = '/index.html'
 
 self.addEventListener('install', (event) => {
