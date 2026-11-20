@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { logout, roleLabel, useStore, unreadChatCount } from '../store'
 import { useEffect, useState } from 'react'
+import InstallApp from './InstallApp'
 
 const baseNav = [
   { to: '/', label: 'Dashibodi', icon: LayoutDashboard },
@@ -49,27 +50,6 @@ export default function Layout({ session, children }) {
   const unread = unreadChatCount(state)
   const [open, setOpen] = useState(false)
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
-  const [installPrompt, setInstallPrompt] = useState(null)
-  const [installed, setInstalled] = useState(false)
-
-  useEffect(() => {
-    const onBip = (e) => { e.preventDefault(); setInstallPrompt(e) }
-    const onInstalled = () => { setInstalled(true); setInstallPrompt(null) }
-    window.addEventListener('beforeinstallprompt', onBip)
-    window.addEventListener('appinstalled', onInstalled)
-    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) setInstalled(true)
-    return () => {
-      window.removeEventListener('beforeinstallprompt', onBip)
-      window.removeEventListener('appinstalled', onInstalled)
-    }
-  }, [])
-
-  const install = async () => {
-    if (!installPrompt) return
-    installPrompt.prompt()
-    try { await installPrompt.userChoice } catch {}
-    setInstallPrompt(null)
-  }
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark)
@@ -159,11 +139,7 @@ export default function Layout({ session, children }) {
             <Search size={14} /> Tafuta <span className="ml-auto rounded-md border border-white/20 px-1.5 py-0.5 text-[10px]">Ctrl K</span>
           </button>
 
-          {installPrompt && !installed && (
-            <button onClick={install} className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-cyan-500 hover:from-indigo-400 hover:to-cyan-400 transition shadow-lg active:scale-95">
-              <Download size={14} /> Sakinisha App
-            </button>
-          )}
+          <InstallApp variant="sidebar" />
 
           <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/5 border border-white/10">
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center text-[11px] font-bold ring-2 ring-white/20">{initials}</div>
@@ -194,10 +170,13 @@ export default function Layout({ session, children }) {
             <div className="text-[10px] text-gray-400 leading-none">SmartSoko</div>
             <div className="font-bold text-sm truncate leading-tight">{pageTitle}</div>
           </div>
-          <Link to="/notifications" className="ml-auto relative p-2 rounded-lg hover:bg-gray-100 transition">
-            <Bell size={18} />
-            {pend > 0 && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />}
-          </Link>
+          <div className="ml-auto flex items-center gap-1.5">
+            <InstallApp variant="icon" className="!p-2" />
+            <Link to="/notifications" className="relative p-2 rounded-lg hover:bg-gray-100 transition">
+              <Bell size={18} />
+              {pend > 0 && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500" />}
+            </Link>
+          </div>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 text-white text-[10px] font-bold flex items-center justify-center">{initials}</div>
         </header>
 
@@ -215,6 +194,7 @@ export default function Layout({ session, children }) {
               className="hidden sm:flex items-center gap-2 text-xs text-gray-500 bg-white/80 border border-gray-200 rounded-xl px-3 py-2 hover:border-primary-300 hover:text-primary-700 transition shadow-sm">
               <Search size={14} /> Tafuta <span className="rounded border border-gray-200 px-1.5 py-0.5 text-[10px]">Ctrl K</span>
             </button>
+            <InstallApp variant="icon" />
             <Link to="/notifications" className="relative p-2.5 rounded-xl bg-white/80 border border-gray-200 hover:border-primary-300 hover:text-primary-700 transition shadow-sm" aria-label="Arifa">
               <Bell size={17} />
               {pend > 0 && <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[9px] font-bold flex items-center justify-center">{pend}</span>}
