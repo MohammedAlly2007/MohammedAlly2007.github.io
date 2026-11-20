@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   Download, X, Share, MoreVertical, Monitor, Smartphone, CheckCircle2,
-  PlusSquare, ArrowUpRight, RefreshCw, WifiOff,
+  PlusSquare, ArrowUpRight, RefreshCw, WifiOff, Apple, Chrome, Sparkles,
 } from 'lucide-react'
 
 const standalone = () =>
@@ -12,7 +12,7 @@ const standalone = () =>
   )
 
 function detectPlatform() {
-  if (typeof navigator === 'undefined') return 'desktop'
+  if (typeof navigator === 'undefined') return 'android'
   const ua = navigator.userAgent || ''
   const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   if (iOS) return 'ios'
@@ -61,7 +61,6 @@ export function useInstall() {
     const p = deferredPrompt
     deferredPrompt = null
     try {
-      // Chrome may return a promise here; never leave it unhandled.
       const res = p.prompt()
       if (res && typeof res.then === 'function') await res.catch(() => {})
       await p.userChoice
@@ -77,91 +76,112 @@ export function useInstall() {
   return { ...state, install }
 }
 
+const PLATFORMS = [
+  { id: 'ios', label: 'iPhone / iPad', icon: Apple },
+  { id: 'android', label: 'Android', icon: Smartphone },
+  { id: 'desktop', label: 'Kompyuta', icon: Monitor },
+]
+
 const STEPS = {
-  ios: {
-    icon: Smartphone,
-    title: 'Sakinisha kwenye iPhone / iPad',
-    steps: [
-      { icon: Share, text: 'Bonyeza ikoni ya Share kwenye kona ya chini ya Safari.' },
-      { icon: PlusSquare, text: 'Chagua "Add to Home Screen" (Ongeza kwenye Skrini ya Nyumbani).' },
-      { icon: CheckCircle2, text: 'Bonyeza "Add" — SmartSoko itaonekana kwenye skrini yako ya nyumbani.' },
-    ],
-  },
-  android: {
-    icon: Smartphone,
-    title: 'Sakinisha kwenye Android',
-    steps: [
-      { icon: MoreVertical, text: 'Bonyeza menyu ya dots tatu juu kulia kwenye Chrome.' },
-      { icon: Download, text: 'Chagua "Install app" au "Add to Home screen".' },
-      { icon: CheckCircle2, text: 'Bonyeza "Install" — app itaongezwa kwenye simu yako.' },
-    ],
-  },
-  desktop: {
-    icon: Monitor,
-    title: 'Sakinisha kwenye kompyuta',
-    steps: [
-      { icon: ArrowUpRight, text: 'Bonyeza ikoni ya install kwenye upande wa kulia wa address bar, au menyu ya browser.' },
-      { icon: Download, text: 'Chagua "Install SmartSoko..." / "Sakinisha SmartSoko".' },
-      { icon: CheckCircle2, text: 'Bonyeza "Install" — app itafunguka kama programu ya kawaida.' },
-    ],
-  },
+  ios: [
+    { icon: Share, title: 'Bonyeza Share', text: 'Kwenye Safari, bonyeza ikoni ya Share (⬆️) kwenye kona ya chini ya skrini.' },
+    { icon: PlusSquare, title: 'Ongeza kwenye skrini', text: 'Chagua "Add to Home Screen" (Ongeza kwenye Skrini ya Nyumbani).' },
+    { icon: CheckCircle2, title: 'Thibitisha', text: 'Bonyeza "Add" — SmartSoko itaonekana kwenye skrini yako ya nyumbani.' },
+  ],
+  android: [
+    { icon: MoreVertical, title: 'Fungua menyu', text: 'Kwenye Chrome, bonyeza menyu ya dots tatu (⋮) juu kulia.' },
+    { icon: Download, title: 'Sakinisha', text: 'Chagua "Install app" au "Add to Home screen".' },
+    { icon: CheckCircle2, title: 'Thibitisha', text: 'Bonyeza "Install" — app itaongezwa kwenye simu yako.' },
+  ],
+  desktop: [
+    { icon: ArrowUpRight, title: 'Bonyeza install', text: 'Bonyeza ikoni ya install kwenye upande wa kulia wa address bar, au menyu ya browser.' },
+    { icon: Download, title: 'Sakinisha', text: 'Chagua "Install SmartSoko..." / "Sakinisha SmartSoko".' },
+    { icon: CheckCircle2, title: 'Fungua', text: 'Bonyeza "Install" — app itafunguka kama programu ya kawaida.' },
+  ],
 }
 
 function HelpModal({ open, onClose, onRetry, canPrompt }) {
   const [platform, setPlatform] = useState(detectPlatform)
   useEffect(() => { if (open) setPlatform(detectPlatform()) }, [open])
   if (!open) return null
-  const info = STEPS[platform] || STEPS.desktop
-  const PlatformIcon = info.icon
+  const steps = STEPS[platform] || STEPS.android
 
   return (
-    <div className="fixed inset-0 modal-backdrop flex items-center justify-center z-[120] p-4" onMouseDown={onClose}>
-      <div className="bg-white dark:bg-[#111a2b] rounded-2xl w-full max-w-lg shadow-2xl animate-scaleIn overflow-hidden" onMouseDown={(e) => e.stopPropagation()}>
-        <div className="relative hero-mesh px-5 py-4 text-white overflow-hidden">
-          <div className="absolute -right-6 -top-8 w-28 h-28 rounded-full bg-white/10 blur-xl" />
+    <div className="fixed inset-0 modal-backdrop flex items-end sm:items-center justify-center z-[120] p-0 sm:p-4" onMouseDown={onClose}>
+      <div className="bg-white dark:bg-[#111a2b] rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg shadow-2xl animate-scaleIn overflow-hidden max-h-[92vh] flex flex-col" onMouseDown={(e) => e.stopPropagation()}>
+        {/* hero */}
+        <div className="relative hero-mesh px-5 py-5 text-white overflow-hidden shrink-0">
+          <div className="absolute -right-8 -top-10 w-32 h-32 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -left-6 bottom-0 w-24 h-24 rounded-full bg-cyan-300/20 blur-2xl" />
           <div className="relative flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-white/15 border border-white/25 flex items-center justify-center">
-              <PlatformIcon size={20} />
+            <div className="w-14 h-14 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center shadow-lg">
+              <img src="/icon-192.png" alt="" className="w-10 h-10 rounded-xl" />
             </div>
-            <div className="min-w-0">
-              <h3 className="font-extrabold leading-tight">{info.title}</h3>
-              <p className="text-[11px] text-indigo-100/80">Hatua {info.steps.length} kwa urahisi</p>
+            <div className="min-w-0 flex-1">
+              <h3 className="font-extrabold text-lg leading-tight">Sakinisha SmartSoko</h3>
+              <p className="text-[11px] text-indigo-100/85 mt-0.5">Weka app kwenye simu au kompyuta yako — bure, bila duka la programu.</p>
             </div>
-            <button onClick={onClose} className="ml-auto p-1.5 rounded-lg hover:bg-white/15 transition" aria-label="Funga">
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/15 transition" aria-label="Funga">
               <X size={18} />
             </button>
           </div>
         </div>
 
-        <div className="p-5 space-y-3">
-          {info.steps.map(({ icon: Icon, text }, i) => (
+        {/* platform tabs */}
+        <div className="px-4 pt-4 shrink-0">
+          <div className="flex gap-2 p-1 bg-gray-100 dark:bg-white/5 rounded-2xl">
+            {PLATFORMS.map((p) => {
+              const Icon = p.icon
+              const active = platform === p.id
+              return (
+                <button key={p.id} onClick={() => setPlatform(p.id)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-all ${active ? 'bg-white dark:bg-[#1a2439] text-indigo-700 dark:text-indigo-300 shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}>
+                  <Icon size={14} /> {p.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* steps */}
+        <div className="p-4 overflow-y-auto flex-1 space-y-3">
+          {steps.map(({ icon: Icon, title, text }, i) => (
             <div key={i} className="flex items-start gap-3">
-              <div className="w-8 h-8 shrink-0 rounded-full bg-primary-50 text-primary-600 dark:bg-indigo-500/15 dark:text-indigo-300 flex items-center justify-center font-bold text-xs">
+              <div className="w-9 h-9 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 text-white flex items-center justify-center font-bold text-sm shadow-md">
                 {i + 1}
               </div>
-              <div className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-200">
-                <Icon size={15} className="mt-0.5 shrink-0 text-primary-500" />
-                <span>{text}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-sm font-semibold text-navy-900 dark:text-white">
+                  <Icon size={14} className="text-primary-500 dark:text-indigo-300" /> {title}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-300 mt-0.5 leading-relaxed">{text}</p>
               </div>
             </div>
           ))}
 
-          <div className="flex flex-wrap items-center gap-2 pt-2">
-            <button
-              onClick={() => setPlatform(p => (p === 'ios' ? 'android' : p === 'android' ? 'desktop' : 'ios'))}
-              className="btn-secondary !py-2 !px-3 text-xs flex items-center gap-1.5"
-            >
-              <RefreshCw size={13} /> Niko kwenye kifaa kingine
-            </button>
-            {canPrompt && (
-              <button onClick={onRetry} className="btn-primary !py-2 !px-3 text-xs">Sakinisha sasa</button>
-            )}
-          </div>
+          {platform === 'ios' && (
+            <div className="rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 p-3 text-[11px] text-amber-800 dark:text-amber-200 flex items-start gap-2">
+              <Sparkles size={13} className="mt-0.5 shrink-0" />
+              <span>Kwenye iPhone, Apple hairuhusu kusakinisha kiotomatiki — fuata hatua 3 hapo juu. Hatua hizi zitachukua sekunde chache tu.</span>
+            </div>
+          )}
 
           <div className="rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-100 dark:border-white/10 p-3 text-[11px] text-gray-600 dark:text-gray-300 flex items-start gap-2">
             <WifiOff size={14} className="mt-0.5 shrink-0 text-emerald-600" />
             <span>Baada ya kusakinisha, SmartSoko inafanya kazi bila mtandao na itasawazisha data yako mtandao unaporejea.</span>
           </div>
+        </div>
+
+        {/* footer actions */}
+        <div className="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-white/10 flex flex-wrap items-center gap-2 shrink-0">
+          {canPrompt && (
+            <button onClick={onRetry} className="btn-primary flex-1 !py-2.5 text-sm flex items-center justify-center gap-2">
+              <Download size={15} /> Sakinisha sasa
+            </button>
+          )}
+          <button onClick={onClose} className="btn-secondary flex-1 !py-2.5 text-sm">
+            Nimeelewa
+          </button>
         </div>
       </div>
     </div>
@@ -207,24 +227,26 @@ export default function InstallApp({ variant = 'inline', className = '', label }
 
   if (variant === 'card') {
     return (
-      <div className={`card flex items-start gap-4 ${className}`}>
-        <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25">
-          <Download size={22} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-bold text-navy-900">Sakinisha Programu (App)</h3>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Weka SmartSoko kwenye simu au kompyuta yako. Itafanya kazi bila mtandao na itasawazisha data mtandao unaporejea.
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button onClick={start} className="btn-primary flex items-center gap-2 text-sm">
-              <Download size={15} /> Sakinisha App
-            </button>
-            <span className="text-[11px] text-gray-400">Bure — hakuna duka la programu linalohitajika</span>
+      <>
+        <div className={`card flex items-start gap-4 ${className}`}>
+          <div className="w-12 h-12 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500 text-white flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <Download size={22} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-bold text-navy-900">Sakinisha Programu (App)</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Weka SmartSoko kwenye simu au kompyuta yako. Itafanya kazi bila mtandao na itasawazisha data mtandao unaporejea.
+            </p>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button onClick={start} className="btn-primary flex items-center gap-2 text-sm">
+                <Download size={15} /> Sakinisha App
+              </button>
+              <span className="text-[11px] text-gray-400">Bure — hakuna duka la programu linalohitajika</span>
+            </div>
           </div>
         </div>
         <HelpModal open={help} onClose={() => setHelp(false)} onRetry={start} canPrompt={canPrompt} />
-      </div>
+      </>
     )
   }
 
@@ -245,6 +267,50 @@ export default function InstallApp({ variant = 'inline', className = '', label }
       <button onClick={start} className={`btn-primary flex items-center gap-2 text-sm ${className}`}>
         <Download size={15} /> {label || 'Sakinisha App'}
       </button>
+      <HelpModal open={help} onClose={() => setHelp(false)} onRetry={start} canPrompt={canPrompt} />
+    </>
+  )
+}
+
+/**
+ * A slim, dismissible banner for mobile (and any) users who haven't installed.
+ * Persisted dismissal in localStorage.
+ */
+export function InstallBanner() {
+  const { installed, canPrompt, install } = useInstall()
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem('ssbf_install_banner_dismissed') === '1' } catch { return false }
+  })
+  const [help, setHelp] = useState(false)
+
+  if (installed || dismissed) return null
+
+  const start = async () => {
+    if (canPrompt) {
+      const done = await install()
+      if (done) return
+    }
+    setHelp(true)
+  }
+
+  return (
+    <>
+      <div className="mb-4 relative overflow-hidden rounded-2xl border border-indigo-200 dark:border-indigo-500/30 bg-gradient-to-r from-indigo-50 via-blue-50 to-cyan-50 dark:from-indigo-500/10 dark:via-blue-500/5 dark:to-cyan-500/10 px-4 py-3 flex items-center gap-3 no-print">
+        <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 text-white flex items-center justify-center shadow-md">
+          <Download size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-bold text-indigo-900 dark:text-indigo-200">Sakinisha SmartSoko kwenye simu yako</div>
+          <div className="text-[11px] text-indigo-700/80 dark:text-indigo-300/80">Itafanya kazi bila mtandao na itasawazisha data yako.</div>
+        </div>
+        <button onClick={start} className="btn-primary !py-2 !px-3 text-xs shrink-0">
+          Sakinisha
+        </button>
+        <button onClick={() => { try { localStorage.setItem('ssbf_install_banner_dismissed', '1') } catch {} ; setDismissed(true) }}
+          className="p-1 rounded-lg text-indigo-400 hover:bg-indigo-100 dark:hover:bg-white/10 transition shrink-0" aria-label="Funga">
+          <X size={16} />
+        </button>
+      </div>
       <HelpModal open={help} onClose={() => setHelp(false)} onRetry={start} canPrompt={canPrompt} />
     </>
   )

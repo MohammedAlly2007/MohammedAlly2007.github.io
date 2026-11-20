@@ -8,6 +8,7 @@ import {
   memberPaid, money, pendingExpenses, formatDate,
 } from '../store'
 import StatCard from '../components/StatCard'
+import { InstallBanner } from '../components/InstallApp'
 
 function Donut({ segments, size = 132, stroke = 14 }) {
   const total = segments.reduce((s, x) => s + x.value, 0) || 1
@@ -79,7 +80,7 @@ export default function Dashboard({ canEdit }) {
 
   return (
     <div className="space-y-5">
-      {/* ---------- HERO ---------- */}
+      <div className="md:hidden"><InstallBanner /></div>
       <section className="hero-mesh relative overflow-hidden rounded-3xl p-5 sm:p-7 text-white shadow-2xl shadow-indigo-900/25 animate-slideUp">
         <div className="absolute inset-0 opacity-30 pointer-events-none">
           <div className="absolute -top-16 -right-10 w-56 h-56 rounded-full bg-white/20 blur-2xl animate-floatSlow" />
