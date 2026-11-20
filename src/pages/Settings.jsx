@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore, setState, genId, hashPassword, auditLog, roleLabel as roleName, cloudDelete } from '../store'
 import { Plus, Trash2, X, Download, Upload, KeyRound, ShieldCheck, Database, Users } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
 
@@ -94,7 +95,12 @@ export default function Settings() {
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-navy-900 mb-4">Mipangilio & Watumiaji</h2>
+      <PageHeader
+        icon={ShieldCheck}
+        gradient="from-slate-700 to-indigo-800"
+        title="Mipangilio & Watumiaji"
+        subtitle="Usimamizi wa akaunti, usalama na hifadhi ya data"
+      />
 
       <div className="card mb-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">

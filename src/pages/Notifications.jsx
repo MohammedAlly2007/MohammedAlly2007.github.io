@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore, memberStatus, memberPaid, memberExpected, money } from '../store'
 import { AlertCircle, Bell, MessageCircle, Copy, FileText, CheckCircle2 } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 import { showToast } from '../components/Toast'
 
 function waNumber(phone = '') {
@@ -42,10 +43,12 @@ export default function Notifications() {
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="text-2xl font-bold text-navy-900">Arifa & Vikumbusho vya Madeni</h2>
-        <p className="text-xs text-gray-500">Tuma vikumbusho kwa wanachama wanaodaiwa</p>
-      </div>
+      <PageHeader
+        icon={Bell}
+        gradient="from-amber-500 to-rose-500"
+        title="Arifa & Vikumbusho vya Madeni"
+        subtitle="Tuma vikumbusho kwa wanachama wanaodaiwa"
+      />
 
       {arrears.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">

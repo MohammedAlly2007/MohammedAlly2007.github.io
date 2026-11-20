@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useStore, setState, genId, money, memberStatus, memberPaid, memberExpected, auditLog, cloudDelete } from '../store'
-import { Plus, Edit2, Trash2, X, Eye, Upload, Download, Printer } from 'lucide-react'
+import { useStore, setState, genId, money, memberStatus, memberPaid, memberExpected, auditLog, cloudDelete, initials } from '../store'
+import PageHeader from '../components/PageHeader'
+import { Plus, Edit2, Trash2, X, Eye, Upload, Download, Printer, Users as UsersIcon } from 'lucide-react'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
 
@@ -147,20 +148,21 @@ export default function Members({ canEdit }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h2 className="text-2xl font-bold text-navy-900">Wanabodi / Wanachama</h2>
-          <p className="text-xs text-gray-500">{s.members.length} wanachama wameandikishwa</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
+      <PageHeader
+        icon={UsersIcon}
+        gradient="from-indigo-500 to-violet-600"
+        title="Wanabodi / Wanachama"
+        subtitle={`${s.members.length} wanachama wameandikishwa`}
+        badge={<span className="badge-soft bg-indigo-50 text-indigo-700 border-indigo-100">{s.members.length} jumla</span>}
+        actions={<div className="flex gap-2 flex-wrap">
           <button onClick={exportCSV} className="btn-secondary flex items-center gap-2"><Download size={16} /> CSV</button>
           {canEdit && <>
             <button onClick={() => fileRef.current?.click()} className="btn-secondary flex items-center gap-2"><Upload size={16} /> Import CSV</button>
             <input ref={fileRef} type="file" accept=".csv,text/csv" className="hidden" onChange={importCSV} />
             <button onClick={openNew} className="btn-primary flex items-center gap-2"><Plus size={16} /> Ongeza</button>
           </>}
-        </div>
-      </div>
+        </div>}
+      />
 
       <div className="mb-3">
         <input className="input" placeholder="Tafuta kwa jina, simu, barua pepe au nafasi..." value={q} onChange={e => setQ(e.target.value)} />
@@ -187,7 +189,17 @@ export default function Members({ canEdit }) {
               const exp = memberExpected(m, s.campaigns)
               return (
                 <tr key={m.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition">
-                  <td className="py-2.5 font-medium">{m.fullName}</td>
+                  <td className="py-2.5 font-medium">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-400 text-white text-[10px] font-bold flex items-center justify-center shadow-sm ring-2 ring-white/60">
+                        {initials(m.fullName)}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate">{m.fullName}</div>
+                        <div className="text-[10px] text-gray-400 sm:hidden">{m.position}</div>
+                      </div>
+                    </div>
+                  </td>
                   <td className="py-2.5 hidden sm:table-cell">{m.phone || '-'}</td>
                   <td className="py-2.5 hidden md:table-cell">{m.position}</td>
                   <td className="py-2.5 text-right tabular">{money(exp)}</td>

@@ -1,5 +1,6 @@
 import { useStore, totalCollected, totalExpenses, balance, memberStatus, memberPaid, memberExpected, money, pendingExpenses, isApproved } from '../store'
-import { Download, Printer, AlertCircle } from 'lucide-react'
+import { Download, Printer, AlertCircle, FileBarChart } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 
 const STATUS_SW = { complete: 'Amekamilisha', owes: 'Anadaiwa', none: 'Hajachangia' }
 
@@ -49,17 +50,17 @@ export default function Reports() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2 no-print">
-        <div>
-          <h2 className="text-2xl font-bold text-navy-900">Ripoti za Kifedha</h2>
-          <p className="text-xs text-gray-500">Imezalishwa {new Date().toLocaleString('sw-TZ')}</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
+      <PageHeader
+        icon={FileBarChart}
+        gradient="from-sky-500 to-cyan-600"
+        title="Ripoti za Kifedha"
+        subtitle={`Imezalishwa ${new Date().toLocaleString('sw-TZ')}`}
+        actions={<div className="flex gap-2 flex-wrap">
           <button onClick={exportMembers} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Wanachama (CSV)</button>
           <button onClick={exportIncomeExpense} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> Mapato/Matumizi (CSV)</button>
           <button onClick={() => window.print()} className="btn-primary flex items-center gap-1.5 text-sm"><Printer size={15} /> Chapisha / PDF</button>
-        </div>
-      </div>
+        </div>}
+      />
 
       <div className="card mb-4">
         <div className="flex items-center justify-between flex-wrap gap-2">

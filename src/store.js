@@ -139,6 +139,22 @@ export function useStore() {
 // helpers
 export const money = (n) => new Intl.NumberFormat('sw-TZ', { style: 'currency', currency: 'TZS', maximumFractionDigits: 0 }).format(Number(n || 0))
 
+// Categories are shared by Expenses and Budgets so the two pages always
+// compare like with like.
+export const EXPENSE_CATEGORIES = [
+  { value: 'operations', label: 'Uendeshaji (huduma/vifaa)' },
+  { value: 'investment', label: 'Uwekezaji / kukuza biashara' },
+  { value: 'meeting', label: 'Mikutano ya bodi' },
+  { value: 'transport', label: 'Usafiri' },
+  { value: 'training', label: 'Mafunzo' },
+  { value: 'supplies', label: 'Vifaa vya ofisi' },
+  { value: 'other', label: 'Nyingine' },
+]
+
+export function categoryLabel(value) {
+  return EXPENSE_CATEGORIES.find((c) => c.value === value)?.label || value || 'Nyingine'
+}
+
 export function genId(prefix = 'id') { return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,7)}` }
 
 export async function login(email, password) {
@@ -302,26 +318,35 @@ async function cloudPull() {
   const keys = ['members', 'campaigns', 'payments', 'expenses', 'budgets', 'audit', 'users']
   const result = { members: [], campaigns: [], payments: [], expenses: [], budgets: [], audit: [], users: [], chat: [], session: null }
   const ok = {}
-  for (let i = 0; i < tables.length; i++) {
+  // Fetch every table in parallel so startup stays fast (~1 round-trip
+  // instead of one per table) even on a slow mobile connection.
+  const rowsByTable = await Promise.all(tables.map(async (table) => {
     try {
-      const rows = await cloudFetch('/rest/v1/' + tables[i] + '?select=*')
-      ok[tables[i]] = true
-      if (tables[i] === 'board_audit') {
-        // Live Chat rides on the audit table (action = 'chat') so it works with
-        // exactly the same database grants as the rest of the app.
-        result.audit = (rows || []).filter(r => r.action !== CHAT_ACTION).map(r => fromDb('board_audit', r))
-        result.chat = (rows || []).filter(r => r.action === CHAT_ACTION).map(r => ({
-          id: r.id,
-          body: r.detail || '',
-          authorName: r.actor || 'Mtumiaji',
-          role: r.role || 'member',
-          at: r.created_at,
-        }))
-      } else {
-        result[keys[i]] = (rows || []).map((r) => fromDb(tables[i], r))
-      }
-    } catch { ok[tables[i]] = false }
-  }
+      const rows = await cloudFetch('/rest/v1/' + table + '?select=*')
+      ok[table] = true
+      return rows || []
+    } catch {
+      ok[table] = false
+      return []
+    }
+  }))
+  tables.forEach((table, i) => {
+    const rows = rowsByTable[i]
+    if (table === 'board_audit') {
+      // Live Chat rides on the audit table (action = 'chat') so it works with
+      // exactly the same database grants as the rest of the app.
+      result.audit = rows.filter(r => r.action !== CHAT_ACTION).map(r => fromDb('board_audit', r))
+      result.chat = rows.filter(r => r.action === CHAT_ACTION).map(r => ({
+        id: r.id,
+        body: r.detail || '',
+        authorName: r.actor || 'Mtumiaji',
+        role: r.role || 'member',
+        at: r.created_at,
+      }))
+    } else {
+      result[keys[i]] = rows.map((r) => fromDb(table, r))
+    }
+  })
   result._ok = ok
   return result
 }

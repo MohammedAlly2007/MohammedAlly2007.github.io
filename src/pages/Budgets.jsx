@@ -1,13 +1,11 @@
 import { useState } from 'react'
-import { useStore, setState, genId, money, auditLog, expensesInPeriod, cloudDelete } from '../store'
+import { useStore, setState, genId, money, auditLog, expensesInPeriod, cloudDelete, EXPENSE_CATEGORIES, categoryLabel } from '../store'
 import { Plus, X, Trash2, Edit2, PieChart } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
 
-const CATS = [
-  { value: 'operations', label: 'Uendeshaji (huduma/vifaa)' },
-  { value: 'investment', label: 'Uwekezaji / kukuza biashara' },
-]
+const CATS = EXPENSE_CATEGORIES
 const EMPTY = { category: 'operations', amount: 0, period: 'monthly', note: '' }
 
 export default function Budgets({ canEdit }) {
@@ -46,13 +44,13 @@ export default function Budgets({ canEdit }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h2 className="text-2xl font-bold text-navy-900">Bajeti (Budgets)</h2>
-          <p className="text-xs text-gray-500">Fuatilia matumizi dhidi ya bajeti iliyopangwa</p>
-        </div>
-        {canEdit && <button onClick={openNew} className="btn-primary flex items-center gap-2"><Plus size={16} /> Bajeti Mpya</button>}
-      </div>
+      <PageHeader
+        icon={PieChart}
+        gradient="from-amber-500 to-orange-600"
+        title="Bajeti (Budgets)"
+        subtitle="Fuatilia matumizi dhidi ya bajeti iliyopangwa"
+        actions={canEdit ? <button onClick={openNew} className="btn-primary flex items-center gap-2"><Plus size={16} /> Bajeti Mpya</button> : null}
+      />
 
       {budgets.length > 0 && (
         <div className="card mb-4 flex items-center gap-3">
@@ -75,7 +73,7 @@ export default function Budgets({ canEdit }) {
             <div key={b.id} className={`card ${over ? 'border-red-300' : ''}`}>
               <div className="flex justify-between items-start gap-2">
                 <div>
-                  <h3 className="font-bold">{CATS.find(c => c.value === b.category)?.label || b.category}</h3>
+                  <h3 className="font-bold">{categoryLabel(b.category)}</h3>
                   <p className="text-xs text-gray-500">{b.period === 'monthly' ? 'Kwa mwezi huu' : 'Kwa mwaka huu'} {b.note && `— ${b.note}`}</p>
                 </div>
                 {canEdit && (

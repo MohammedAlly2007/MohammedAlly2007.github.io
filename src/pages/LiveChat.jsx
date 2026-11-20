@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore, sendChat, refreshFromCloud, markChatSeen, initials, roleLabel } from '../store'
 import { MessageSquare, Send, RefreshCw, Users, ArrowDown, Smile } from 'lucide-react'
 import { showToast } from '../components/Toast'
+import PageHeader from '../components/PageHeader'
 
 const ROLE_STYLE = {
   cfo: 'bg-purple-100 text-purple-700',
@@ -117,30 +118,26 @@ export default function LiveChat() {
 
   return (
     <div className="animate-fadeIn">
-      <div className="flex items-start justify-between gap-3 flex-wrap mb-4">
-        <div>
-          <h2 className="text-2xl font-bold text-navy-900 flex items-center gap-2">
-            <MessageSquare size={22} className="text-primary-600" /> Live Chat
-          </h2>
-          <p className="text-xs text-gray-500">Mazungumzo ya papo kwa papo kati ya wajumbe wa bodi</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-            </span>
-            {onlineCount} mtandaoni
+      <PageHeader
+        icon={MessageSquare}
+        gradient="from-indigo-500 to-cyan-500"
+        title="Live Chat"
+        subtitle="Mazungumzo ya papo kwa papo kati ya wajumbe wa bodi"
+        badge={<span className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
-          <button
-            onClick={async () => { setSyncing(true); await refreshFromCloud(); setSyncing(false); showToast('Ujumbe umesasishwa', 'success') }}
-            className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1.5"
-            title="Sasisha ujumbe"
-          >
-            <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> Sasisha
-          </button>
-        </div>
-      </div>
+          {onlineCount} mtandaoni
+        </span>}
+        actions={<button
+          onClick={async () => { setSyncing(true); await refreshFromCloud(); setSyncing(false); showToast('Ujumbe umesasishwa', 'success') }}
+          className="btn-secondary !px-3 !py-2 text-xs flex items-center gap-1.5"
+          title="Sasisha ujumbe"
+        >
+          <RefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> Sasisha
+        </button>}
+      />
 
       <div className="card !p-0 overflow-hidden flex flex-col h-[calc(100vh-14rem)] min-h-[420px]">
         {/* thread */}
@@ -174,7 +171,7 @@ export default function LiveChat() {
                 return (
                   <div key={m.id} className={`flex items-end gap-2 ${own ? 'justify-end' : 'justify-start'} animate-slideUp`}>
                     {!own && (
-                      <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-navy-700 to-primary-700 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">
+                      <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-br from-slate-600 to-indigo-700 text-white text-[11px] font-bold flex items-center justify-center shadow-sm">
                         {initials(m.authorName)}
                       </div>
                     )}

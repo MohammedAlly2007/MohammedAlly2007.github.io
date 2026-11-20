@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useStore, setState, genId, money, auditLog, totalCollected, memberExpected, cloudDelete } from '../store'
+import PageHeader from '../components/PageHeader'
 import { Plus, X, Trash2, Upload, Search, Wallet, CalendarDays } from 'lucide-react'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
@@ -70,13 +71,13 @@ export default function Payments({ canEdit }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h2 className="text-2xl font-bold text-navy-900">Malipo / Michango Inayoingia</h2>
-          <p className="text-xs text-gray-500">{s.payments.length} malipo yamerekodiwa</p>
-        </div>
-        {canEdit && <button onClick={() => setShow(true)} className="btn-primary flex items-center gap-2"><Plus size={16} /> Rekodi Malipo</button>}
-      </div>
+      <PageHeader
+        icon={Wallet}
+        gradient="from-emerald-500 to-teal-600"
+        title="Malipo / Michango Inayoingia"
+        subtitle={`${s.payments.length} malipo yamerekodiwa`}
+        actions={canEdit ? <button onClick={() => setShow(true)} className="btn-primary flex items-center gap-2"><Plus size={16} /> Rekodi Malipo</button> : null}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
         <div className="card flex items-center gap-3">

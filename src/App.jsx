@@ -18,6 +18,7 @@ import AuditLog from './pages/AuditLog'
 import Budgets from './pages/Budgets'
 import MemberStatement from './pages/MemberStatement'
 import LiveChat from './pages/LiveChat'
+import Splash from './components/Splash'
 
 export default function App() {
   const [ready, setReady] = useState(false)
@@ -68,7 +69,7 @@ export default function App() {
     return () => { clearTimeout(timer); events.forEach(e => window.removeEventListener(e, reset)) }
   }, [session])
 
-  if (!ready) return <div className="min-h-screen flex items-center justify-center">Inapakia...</div>
+  if (!ready) return <Splash />
 
   const isAuth = !!session
   const isCFO = session?.role === 'cfo'

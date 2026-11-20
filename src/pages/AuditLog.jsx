@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore, roleLabel } from '../store'
 import { History, Search, Download } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 
 export default function AuditLog() {
   const s = useStore()
@@ -21,19 +22,19 @@ export default function AuditLog() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h2 className="text-2xl font-bold text-navy-900 flex items-center gap-2"><History size={22} /> Kumbukumbu za Mabadiliko</h2>
-          <p className="text-xs text-gray-500">Nani alifanya nini na lini — rekodi {rows.length}</p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        icon={History}
+        gradient="from-slate-600 to-indigo-700"
+        title="Kumbukumbu za Mabadiliko"
+        subtitle={`Nani alifanya nini na lini — rekodi ${rows.length}`}
+        actions={<div className="flex gap-2">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input className="input pl-9 w-56" placeholder="Tafuta..." value={q} onChange={e => setQ(e.target.value)} />
           </div>
           <button onClick={exportCSV} className="btn-secondary flex items-center gap-1.5 text-sm"><Download size={15} /> CSV</button>
-        </div>
-      </div>
+        </div>}
+      />
 
       <div className="card overflow-x-auto">
         <table className="w-full text-sm">

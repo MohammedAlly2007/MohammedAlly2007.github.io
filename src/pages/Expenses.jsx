@@ -1,13 +1,11 @@
 import { useState, useRef } from 'react'
-import { useStore, setState, genId, money, auditLog, isApproved, cloudDelete } from '../store'
-import { Plus, X, Trash2, Upload, Check, Ban, Clock, Search } from 'lucide-react'
+import { useStore, setState, genId, money, auditLog, isApproved, cloudDelete, EXPENSE_CATEGORIES, categoryLabel } from '../store'
+import { Plus, X, Trash2, Upload, Check, Ban, Clock, Search, Receipt as ReceiptIcon } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
 import { showToast } from '../components/Toast'
 import { confirmAction } from '../components/ConfirmModal'
 
-const CATS = [
-  { value: 'operations', label: 'Ununuzi wa huduma/vifaa (uendeshaji)' },
-  { value: 'investment', label: 'Uwekezaji / kukuza biashara' },
-]
+const CATS = EXPENSE_CATEGORIES
 
 const EMPTY = { title: '', category: 'operations', amount: 0, date: new Date().toISOString().slice(0, 10), approvedBy: '', note: '' }
 
@@ -73,7 +71,7 @@ export default function Expenses({ canEdit }) {
     showToast('Matumizi yamefutwa', 'success')
   }
 
-  const catLabel = (v) => CATS.find(c => c.value === v)?.label || v
+  const catLabel = (v) => categoryLabel(v)
   const approvedTotal = s.expenses.filter(isApproved).reduce((x, e) => x + Number(e.amount || 0), 0)
   const pending = s.expenses.filter(e => e.status === 'pending')
 
@@ -84,13 +82,13 @@ export default function Expenses({ canEdit }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <div>
-          <h2 className="text-2xl font-bold text-navy-900">Matumizi (Pesa Zinazotoka)</h2>
-          <p className="text-xs text-gray-500">Matumizi yanahesabika tu baada ya kuidhinishwa</p>
-        </div>
-        {canEdit && <button onClick={() => setShow(true)} className="btn-primary flex items-center gap-2"><Plus size={16} /> Rekodi Matumizi</button>}
-      </div>
+      <PageHeader
+        icon={ReceiptIcon}
+        gradient="from-rose-500 to-pink-600"
+        title="Matumizi (Pesa Zinazotoka)"
+        subtitle="Matumizi yanahesabika tu baada ya kuidhinishwa"
+        actions={canEdit ? <button onClick={() => setShow(true)} className="btn-primary flex items-center gap-2"><Plus size={16} /> Rekodi Matumizi</button> : null}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <div className="card flex items-center gap-3">
