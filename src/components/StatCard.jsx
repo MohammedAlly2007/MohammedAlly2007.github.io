@@ -18,7 +18,7 @@ export default function StatCard({ label, value, hint, icon: Icon, gradient = 'f
           {Icon ? <Icon size={20} /> : null}
         </div>
       </div>
-      {(trend != null || (bars && bars.length > 0)) && (
+      {(trend != null || (bars && bars.length > 2)) && (
         <div className="relative mt-3 flex items-end justify-between gap-2">
           {trend != null && (
             <span className={`inline-flex items-center gap-1 text-[11px] font-semibold ${trend >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -26,7 +26,7 @@ export default function StatCard({ label, value, hint, icon: Icon, gradient = 'f
               {Math.abs(trend)}%
             </span>
           )}
-          {bars && bars.length > 0 && (
+          {bars && bars.length > 2 && (
             <div className="flex items-end gap-[3px] h-7 ml-auto">
               {bars.map((b, i) => (
                 <span key={i}
